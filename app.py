@@ -1,5 +1,4 @@
-import subprocess
-import json
+quests
 from flask import Flask, request, jsonify, render_template
 
 app = Flask(__name__)
@@ -15,44 +14,35 @@ def extract_video():
     
     if not video_url:
         return jsonify({'error': 'URL tidak boleh kosong'}), 400
-
-    command = [
-    "yt-dlp", 
-    "--no-warnings", 
-    "-J", 
-    "--no-playlist", 
-    "--flat-playlist",
-    "--no-check-certificate",
-    "--socket-timeout", "7",
-    "--extractor-args", "youtube:player_client=web",
-    video_url
-]
-
-
+        
+    api_url = f"https://v01.io{video_url}"
     
     try:
-        result = subprocess.run(command, capture_output=True, text=True, timeout=25)
-        if result.returncode != 0:
-            return jsonify({'error': 'Gagal mengekstrak video'}), 500
+        response = requests.get(api_url, timeout=15)
+        if response.status_code != 200:
+            return jsonify({'error': 'Gagal mengambil data dari server'}), 500
             
-        video_data = json.loads(result.stdout)
+        video_data = response.json()
         formats = []
-        for f in video_data.get('formats', []):
-            if f.get('url') and f.get('vcodec') != 'none':
-                formats.append({
-                    'resolution': f.get('resolution', 'Unknown'),
-                    'ext': f.get('ext', 'mp4'),
-                    'download_url': f.get('url')
-                })
-                
+        
+        for stream in video_data.get('urls', []):
+            formats.append({
+                'resolution': stream.get('subName', 'Video'),
+                'ext': stream.get('ext', 'mp4'),
+                'download_url': stream.get('url')
+            })
+            
+        if not formats:
+            return jsonify({'error': 'Video tidak didukung'}), 404
+            
         return jsonify({
-            'title': video_data.get('title'),
-            'thumbnail': video_data.get('thumbnail'),
+            'title': video_data.get('title', 'Video Download'),
+            'thumbnail': video_data.get('id', 'https://unsplash.com'),
             'links': formats
         })
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Server sibuk, silakan coba lagi'}), 500
 
 if __name__ == '__main__':
     import os
