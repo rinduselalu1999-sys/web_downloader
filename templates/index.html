@@ -1,1 +1,71 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Downloader</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; text-align: center; background-color: #f4f4f9; }
+        input[type="text"] { width: 80%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px 20px; background-color: #007BFF; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        #result { margin-top: 30px; text-align: left; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); display: none; }
+        .video-link { display: block; margin: 10px 0; padding: 10px; background: #e9ecef; color: #333; text-decoration: none; border-radius: 4px; text-align: center; }
+        .video-link:hover { background: #ced4da; }
+        img { max-width: 100%; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <h2>Web Video Downloader</h2>
+    <p>Masukkan URL video untuk mengekstrak tautan unduhan</p>
+    <input type="text" id="videoUrl" placeholder="https://youtube.com...">
+    <br><br>
+    <button onclick="extractVideo()">Ekstrak Video</button>
 
+    <div id="result">
+        <h3 id="title"></h3>
+        <div id="thumbnailContainer"></div>
+        <div id="linksContainer"></div>
+    </div>
+
+    <script>
+        async function extractVideo() {
+            const url = document.getElementById('videoUrl').value;
+            if (!url) return alert('Silakan masukkan URL terlebih dahulu');
+            
+            const btn = document.querySelector('button');
+            btn.innerText = 'Memproses...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/extract', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url })
+                });
+                const data = await response.json();
+                
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    document.getElementById('result').style.display = 'block';
+                    document.getElementById('title').innerText = data.title;
+                    document.getElementById('thumbnailContainer').innerHTML = `<img src="${data.thumbnail}" alt="Thumbnail">`;
+                    
+                    const linksContainer = document.getElementById('linksContainer');
+                    linksContainer.innerHTML = '<h4>Pilihan Unduhan:</h4>';
+                    
+                    data.links.forEach(link => {
+                        linksContainer.innerHTML += `<a class="video-link" href="${link.download_url}" target="_blank" download>Unduh ${link.resolution} (${link.ext})</a>`;
+                    });
+                }
+            } catch (err) {
+                alert('Terjadi kesalahan koneksi server');
+            } finally {
+                btn.innerText = 'Ekstrak Video';
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
