@@ -15,7 +15,7 @@ def extract_video():
     if not video_url:
         return jsonify({'error': 'URL tidak boleh kosong'}), 400
         
-    api_url = f"https://v01.io{video_url}"
+     api_url = f"https://api.v01.io/api/download?url={video_url}"
     
     try:
         response = requests.get(api_url, timeout=15)
